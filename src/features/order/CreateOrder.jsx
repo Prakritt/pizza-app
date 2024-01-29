@@ -1,8 +1,13 @@
-import { useState } from "react";
-import { Form, redirect, useActionData } from "react-router-dom";
-import { createOrder } from "../../services/apiRestaurant";
-import { useNavigation } from "react-router-dom";
-import Button from "../../UI/Button";
+import { useEffect, useState } from 'react';
+import { Form, redirect, useActionData } from 'react-router-dom';
+import { createOrder } from '../../services/apiRestaurant';
+import { useNavigation } from 'react-router-dom';
+import Button from '../../UI/Button';
+import { useSelector } from 'react-redux';
+import EmptyCart from '../cart/EmptyCart';
+import store from './../../store';
+import { clearCart, getTotalCartPrice } from '../cart/CartSlice';
+import { formatCurrency } from '../../utils/helpers';
 
 // https://uibakery.io/regex-library/phone-number
 const isValidPhone = (str) =>
@@ -10,41 +15,22 @@ const isValidPhone = (str) =>
     str,
   );
 
-const fakeCart = [
-  {
-    pizzaId: 12,
-    name: "Mediterranean",
-    quantity: 2,
-    unitPrice: 16,
-    totalPrice: 32,
-  },
-  {
-    pizzaId: 6,
-    name: "Vegetale",
-    quantity: 1,
-    unitPrice: 13,
-    totalPrice: 13,
-  },
-  {
-    pizzaId: 11,
-    name: "Spinach and Mushroom",
-    quantity: 1,
-    unitPrice: 15,
-    totalPrice: 15,
-  },
-];
-
 function CreateOrder() {
   // const [withPriority, setWithPriority] = useState(false);
 
   const navigation = useNavigation();
 
-  const isSubmmitting = navigation.state === "submitting";
+  const isSubmmitting = navigation.state === 'submitting';
+
+  const { username } = useSelector((state) => state.user);
 
   const formErrors = useActionData();
 
-  const cart = fakeCart;
-
+  const { cart } = useSelector((state) => state.cart);
+  const totalCartPrice = useSelector(getTotalCartPrice);
+  const priorityPrice = 0;
+  const totalPrice = totalCartPrice + priorityPrice;
+  if (!cart.length) return <EmptyCart />;
   return (
     <div className="px-6 py-4">
       <h2 className="mb-8 text-xl font-semibold">Ready to order? Let's go!</h2>
@@ -52,7 +38,13 @@ function CreateOrder() {
       <Form method="POST">
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
           <label className="sm:basis-40">First Name</label>
-          <input type="text" name="customer" required className="input grow" />
+          <input
+            defaultValue={username}
+            type="text"
+            name="customer"
+            required
+            className="input grow"
+          />
         </div>
 
         <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-center">
@@ -101,7 +93,9 @@ function CreateOrder() {
         <div>
           <input type="hidden" name="cart" value={JSON.stringify(cart)} />
           <Button disabled={isSubmmitting} type="primary">
-            {isSubmmitting ? "Placing Order" : "Order Now"}
+            {isSubmmitting
+              ? 'Placing Order'
+              : `Order Now for ${formatCurrency(totalPrice)}`}
           </Button>
         </div>
       </Form>
@@ -116,17 +110,17 @@ export async function action({ request }) {
   const order = {
     ...data,
     cart: JSON.parse(data.cart),
-    priority: data.priority === "on",
+    priority: data.priority === 'on',
   };
   const errors = {};
   if (!isValidPhone(order.phone))
-    errors.phone = "Please give you correct number.";
+    errors.phone = 'Please give your correct number.';
   if (Object.keys(errors).length > 0) return errors;
 
-  // const newOrder = await createOrder(order);
+  const newOrder = await createOrder(order);
 
-  // return redirect(`/order/${newOrder.id}`);
-  return null;
+  store.dispatch(clearCart());
+  return redirect(`/order/${newOrder.id}`);
 }
 
 export default CreateOrder;
