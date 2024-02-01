@@ -11,7 +11,6 @@ import AppLayout from './UI/AppLayout';
 import Error from './UI/Error';
 
 import './index.css';
-import { updateOrder } from './services/apiRestaurant';
 
 const router = createBrowserRouter([
   {

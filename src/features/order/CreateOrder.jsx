@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Form, redirect, useActionData } from 'react-router-dom';
 import { createOrder } from '../../services/apiRestaurant';
 import { useNavigation } from 'react-router-dom';
@@ -152,7 +152,6 @@ export async function action({ request }) {
     cart: JSON.parse(data.cart),
     priority: data.priority === 'true',
   };
-  console.log(order);
   const errors = {};
   if (!isValidPhone(order.phone))
     errors.phone = 'Please give your correct number.';
